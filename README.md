@@ -1,4 +1,3 @@
-hiperorganismo_antropofagico
-============================
+# H.A. – hiperorganismo_antropofagico
 
-####repositório de códigos para o sistema robótico H.A. desenvolvido em ambiente de pesquisa do NANO
+Repositório de códigos Arduino e Processing para o sistema robótico H.A. desenvolvido em ambiente de pesquisa do NANO
