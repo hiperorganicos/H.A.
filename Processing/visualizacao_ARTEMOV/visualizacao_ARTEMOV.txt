@@ -1,0 +1,202 @@
+/* ---------------------------------------------------------------------------------------------
+ * Ecologias Hiperorgânicas
+ * ---------------------------------------------------------------------------------------------
+ * prog:  Barbara Castro / Multimedia artist and designer / EBA/UFRJ / IMPA
+ * www.barbaracastro.com.br    !      www.ctrlbarbara.wordpress.com
+ * date:  24/02/2012 (m/d/y)
+ * ---------------------------------------------------------------------------------------------
+ * Visualização desenvolvida para o robô de Guto Nóbrega. Mais informações em: http://www.nano.eba.ufrj.br 
+ */
+
+
+import fullscreen.*; 
+FullScreen fs; 
+
+import oscP5.*;
+import netP5.*;
+
+boolean slider = true; //<----- Mude para 'false' para utilizar dados com o robô 
+
+OscP5 myOsc;
+int myPort = 8000;
+
+float sensor_01 = 0;
+float sensor_02 = 0;
+float campo = 0;
+
+int maxCnt;
+particle p[];
+slider s[]; 
+
+color[]      pColors = {
+  color(0, 255, 0)
+};// color(7,247,245), color(7,247,189), color(203,247,7), color(7,137,247), color(7,247,121), color(255, 255, 255)}; uncomment to get the original set of colors
+
+void setup() {
+  size(1280, 720);
+  background(0);
+  smooth();
+  textSize(11);
+  colorMode(RGB, 255, 255, 255, 100);
+  frameRate(24);
+
+  //Para entrar em tela cheia   
+  fs = new FullScreen(this); 
+  fs.enter(); 
+
+  myOsc = new OscP5(this, myPort);
+
+  //setup particles
+  maxCnt = 4000;
+  p = new particle[maxCnt];
+  for (int i=0; i<maxCnt; i++)
+    p[i] = new particle();
+  
+  if (slider) {
+    s = new slider[5];
+    s[0] = new slider(10, 30, 150, 10, "Aproximação", .5);
+  }
+}
+
+void draw() {
+  noStroke();
+  fill(0, 0, 0, 20);
+  rect(0, 0, width, height);
+
+  float prox_desloc_x, prox_desloc_y;
+  float prox_campo, prox_tam;
+
+  pushMatrix(); 
+  translate(width/2, height/2);
+
+  if (slider == false)
+  {
+    prox_campo = map(sensor_01, 0, 0.8, height, height/6);  
+    prox_desloc_x = map(sensor_01, 0, 1, .5, 6);
+    prox_desloc_y = map(sensor_01, 0, 1, 4, 0.5); 
+    prox_tam = map(sensor_01, 0, 1, 4, 10); 
+
+    for (int i=0; i<200+(sensor_02*800); i++) //(sensor_02*800)
+      p[i].check(prox_campo, prox_desloc_x, prox_desloc_y, prox_tam);
+  }
+
+  if (slider)
+  {
+    prox_campo = map(s[0].val, 0, 0.8, height, height/6);  
+    prox_desloc_x = map(s[0].val, 0, 1, .5, 6);
+    prox_desloc_y = map(s[0].val, 0, 1, 4, 0.5); 
+    prox_tam = map(s[0].val, 0, 1, 4, 10); 
+
+    for (int i=0; i<200+(s[0].val*800); i++) //(sensor_02*800)
+      p[i].check(prox_campo, prox_desloc_x, prox_desloc_y, prox_tam);
+  }
+
+  popMatrix();
+
+  if (slider)
+  {
+    s[0].check(s[0].val);
+  }
+}
+
+class particle {
+  PVector loc = new PVector(random(-width/2,width/2), random(-height/2, height/2)); // campo de origem
+  PVector vel = new PVector(0, 0);
+  PVector target = new PVector(0, 0); 
+  PVector acc;
+  
+   float easing = 0.05;
+  void check(float campo, float desloc_x, float desloc_y, float tam) 
+  {     
+    acc = new PVector(random(-desloc_x, desloc_x), random(-desloc_y,desloc_y), 0); //
+    
+    loc.add(vel);
+    loc.limit(campo);
+    vel.add(acc);
+    vel.limit(4);
+     
+    int colorIndex = int(random(pColors.length));
+
+    fill(pColors[colorIndex]);   
+    ellipse(loc.x, loc.y, tam, tam);
+  }
+}
+
+
+class slider {
+  int posX, posY, w, sz;
+  String lbl;
+  float val;
+   
+  slider(int _posX, int _posY, int _w, int _sz, String _lbl, float _val) {
+    posX = _posX; posY = _posY;
+    w = _w; sz = _sz;
+    lbl = _lbl;
+    val = _val;
+  }
+  void check(float dispVal) {
+    color f = 0; color s = 128;
+    int x = posX + int(w * val);
+    if (mouseY > posY - sz && mouseY < posY + sz*2 && mouseX > posX && mouseX < posX + w + sz) {
+      f = 64; s = 255;
+      if (mousePressed) x = constrain(mouseX, posX, posX+w);
+    }
+    val = (x - posX) / float(w);
+    stroke(s); fill(f);
+    line(posX, posY + sz*0.5, posX + w + sz, posY + sz*0.5);
+    rect(posX + w*val, posY, sz, sz);
+    fill(s);
+    textAlign(LEFT, CENTER);
+    text(lbl, posX, posY-sz);
+    textAlign(RIGHT, CENTER);
+    text(nfc(dispVal,2), posX+w+sz, posY-sz);
+  } 
+}
+ 
+class checkbox {
+  int posX, posY, sz;
+  String lbl;
+  boolean val, hot;
+  checkbox(int _posX, int _posY, int _sz, String _lbl, boolean _val) {
+    posX = _posX; posY = _posY; sz = _sz;
+    lbl = _lbl;
+    val = _val;
+  }
+  void check() {
+    color f = 0; color s = 128;
+    if (mouseY > posY - sz && mouseY < posY + sz*2 && mouseX > posX - sz && mouseX < posX + sz*2) {
+      f = 64; s = 255;
+      if(mousePressed) hot = true;
+      else if(hot) {
+        val = !val;
+        hot = false;
+      }
+    } else hot = false;
+    stroke(s); fill(f);
+    rect(posX, posY, sz, sz);
+    if (val) {
+      strokeWeight(2);
+      line(posX,posY, posX+sz,posY+sz);
+      line(posX+sz,posY, posX,posY+sz);
+      strokeWeight(1);
+    }
+    fill(s);
+    textAlign(LEFT, CENTER);
+    text(lbl, posX, posY-sz);
+  }
+}
+
+void oscEvent(OscMessage msg) {
+  
+  String addr = msg.addrPattern();
+  float val = msg.get(0).floatValue();
+  
+  if (addr.equals("/a")) {
+    sensor_01 = constrain(val, 0, 0.8);
+  }else if(addr.equals("/b")) {
+    sensor_02 = val;
+  }
+  
+  println("sensor_01: " + sensor_01 + " sensor_02: " + sensor_02);
+  
+}
